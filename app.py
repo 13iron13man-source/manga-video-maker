@@ -4,7 +4,7 @@ import edge_tts
 import asyncio
 import os
 # --- CHANGED: New MoviePy Import ---
-from moviepy import *
+from moviepy import ImageClip, AudioFileClip
 from pdf2image import convert_from_path
 
 # --- PASSWORD CHECK ---
