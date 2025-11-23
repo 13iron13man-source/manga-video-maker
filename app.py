@@ -33,7 +33,7 @@ def run_voice_generation(text, output_file):
         st.error(f"Voice Error: {e}")
 
 def analyze_image(image_path):
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     sample_file = genai.upload_file(path=image_path, display_name="Manga Page")
     prompt = "Look at this manga page. Write a short, dramatic narration script (max 3 sentences). No names, just story."
     response = model.generate_content([sample_file, prompt])
