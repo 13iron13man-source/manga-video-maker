@@ -3,8 +3,8 @@ import google.generativeai as genai
 import edge_tts
 import asyncio
 import os
-# We import everything from MoviePy v2 to avoid "ImportError"
-from moviepy import *
+# OLD STYLE IMPORT
+from moviepy.editor import ImageClip, AudioFileClip
 from pdf2image import convert_from_path
 
 # --- PASSWORD CHECK ---
@@ -18,17 +18,19 @@ genai.configure(api_key=GENAI_KEY)
 
 # --- FUNCTIONS ---
 
-# Fixed: Asyncio Loop Handler for Streamlit
 def run_voice_generation(text, output_file):
     async def _generate():
         communicate = edge_tts.Communicate(text, "en-US-ChristopherNeural")
         await communicate.save(output_file)
     
     # Create a new loop explicitly for this thread
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(_generate())
-    loop.close()
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(_generate())
+        loop.close()
+    except Exception as e:
+        st.error(f"Voice Error: {e}")
 
 def analyze_image(image_path):
     model = genai.GenerativeModel('gemini-1.5-flash')
@@ -42,18 +44,16 @@ def create_video(image_path, audio_path, output_path="final_output.mp4"):
     audio = AudioFileClip(audio_path)
     duration = audio.duration + 1.0
     
-    # MOVIEPY V2 LOGIC
-    # 1. Create Image Clip with duration
-    clip = ImageClip(image_path).with_duration(duration)
+    # MOVIEPY V1.0.3 LOGIC (The Stable Way)
+    clip = ImageClip(image_path).set_duration(duration)
     
-    # 2. Resize (Using 'resized', not 'resize')
-    # We ensure width is even to prevent FFmpeg errors
-    clip = clip.resized(height=720)
+    # Resize (height=720) - 'resize' not 'resized'
+    clip = clip.resize(height=720)
     
-    # 3. Set Audio (Using 'with_audio')
-    video = clip.with_audio(audio)
+    # Set Audio - 'set_audio' not 'with_audio'
+    video = clip.set_audio(audio)
     
-    # 4. Write File
+    # Write File
     video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
     return output_path
 
@@ -64,7 +64,6 @@ st.title("🎬 Manga-to-Video Generator")
 uploaded_file = st.file_uploader("Upload Manga (Image or PDF)", type=["jpg", "png", "jpeg", "pdf"])
 
 if uploaded_file is not None:
-    # Handle PDF vs Image
     if uploaded_file.type == "application/pdf":
         with st.spinner("Converting PDF..."):
             with open("temp.pdf", "wb") as f:
@@ -85,7 +84,6 @@ if uploaded_file is not None:
                 st.info(f"Script: {script}")
             
             with st.spinner('2. Generating Voice...'):
-                # Using the fixed loop function
                 run_voice_generation(script, "temp_voice.mp3")
                 
             with st.spinner('3. Rendering Video...'):
